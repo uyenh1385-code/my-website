@@ -1,0 +1,514 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>风起洛阳道 | 官方网站</title>
+    <style>
+        body { margin: 0; background-color: #f5f5f7; font-family: 'Microsoft YaHei', sans-serif; overflow: hidden; user-select: none; }
+
+        /* ====================
+           1. 开场层 & 全局特效
+           ==================== */
+        #intro-layer {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 20000; background: #fff;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 1.5s ease-in-out, visibility 1.5s; cursor: pointer;
+        }
+        #intro-layer.fade-out { opacity: 0; visibility: hidden; pointer-events: none; }
+        #fireworksCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        .typewriter-text {
+            color: #d4af37; font-size: 60px; font-weight: bold; letter-spacing: 5px;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5); z-index: 10;
+            border-right: 4px solid #d4af37; animation: blinkCursor 0.7s steps(1) infinite;
+            white-space: nowrap; overflow: hidden; display: inline-block;
+        }
+        @keyframes blinkCursor { 50% { border-color: transparent; } }
+        .click-hint { margin-top: 40px; font-size: 16px; color: #888; opacity: 0; letter-spacing: 8px; animation: pulseHint 2s infinite; transition: opacity 1s; z-index: 10; }
+        .click-hint.show { opacity: 0.8; }
+        @keyframes pulseHint { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        #fixed-background {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -10;
+            background-image: url('hz.jpg'); background-size: cover; background-position: center;
+            transition: transform 20s ease-out, filter 1s, opacity 0.5s; /* 增加opacity过渡 */
+            filter: brightness(1.05); 
+        }
+        #fixed-background.dark-mode { filter: brightness(0.4) blur(3px); }
+
+        #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; pointer-events: none; }
+        .particle {
+            position: absolute; border-radius: 50%; background: rgba(218, 165, 32, 0.8);
+            box-shadow: 0 0 5px rgba(218, 165, 32, 0.4); animation: floatParticle 25s infinite linear;
+        }
+        @keyframes floatParticle { 0% { transform: translateY(0) translateX(0); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(-100vh) translateX(50px); opacity: 0; } }
+
+        /* ====================
+           2. 视图切换系统
+           ==================== */
+        .view-section {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .view-section.active { opacity: 1; pointer-events: auto; }
+
+        /* --- VIEW: HOME --- */
+        #view-home { z-index: 10; }
+        #logo-area { position: absolute; top: 50%; left: 100px; transform: translateY(-50%); }
+        #home-logo {
+            width: 600px; height: 600px; object-fit: contain; cursor: pointer;
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.2)); animation: logoFloat 6s ease-in-out infinite; transition: 0.5s;
+        }
+        #home-logo:hover { transform: scale(1.05) rotate(-5deg); filter: drop-shadow(0 0 50px gold); }
+        @keyframes logoFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        #menu-area { position: absolute; top: 50%; right: 100px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 30px; align-items: flex-end; }
+        .menu-item {
+            width: 300px; padding: 25px 35px; text-align: right; cursor: pointer;
+            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6); border-right: 5px solid rgba(212, 175, 55, 0.8); 
+            color: #333; font-size: 24px; font-weight: bold; letter-spacing: 2px;
+            clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%); transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .menu-item:hover { background: rgba(255, 255, 255, 0.9); color: #d4af37; padding-right: 55px; box-shadow: 0 0 40px rgba(212, 175, 55, 0.4); }
+        .menu-sub { font-size: 12px; opacity: 0.7; font-weight: normal; margin-top: 5px; color: #555; }
+
+        /* --- VIEW: MEMBERS --- */
+        #view-members { z-index: 10; }
+        #scroll-container { width: 100vw; height: 100vh; overflow: hidden; cursor: grab; opacity: 1; }
+        #game-stage { position: relative; height: 100vh; will-change: transform; }
+        #member-logo-wrapper { position: absolute; top: 50%; left: 80px; transform: translateY(calc(-50% - 180px)); z-index: 100; width: 520px; height: 340px; pointer-events: none; }
+        #member-logo-img { position: absolute; top: calc(50% + 200px); left: calc(50% + 40px); width: 900px; height: 900px; transform: translate(-50%, -50%) rotate(6deg); object-fit: contain; animation: logoBreathe 6s ease-in-out infinite; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.2)); }
+        @keyframes logoBreathe { 0%, 100% { transform: translate(-50%, -50%) rotate(6deg) scale(1); } 50% { transform: translate(-50%, -50%) rotate(6deg) scale(1.03); } }
+        .player-pos { position: absolute; perspective: 1000px; opacity: 0; }
+        .player-pos.wave-anim { animation: waveAppear 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes waveAppear { 0% { opacity: 0; transform: translateY(150px); } 100% { opacity: 1; transform: translateY(0); } }
+        .player-card { background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 5px 10px rgba(212, 175, 55, 0.1); cursor: pointer; transform-style: preserve-3d; border: 1px solid rgba(0,0,0,0.05); transition: border-color 0.3s; width: 220px !important; height: 330px !important; position: relative; }
+        .player-card:hover { border-color: #d4af37; box-shadow: 0 20px 50px rgba(212, 175, 55, 0.4); z-index: 100; }
+        .player-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.5s; position: absolute; top:0; left:0; z-index: 2; }
+        .player-card img.loaded { opacity: 1; }
+        .player-card:hover img { transform: scale(1.05); }
+        .card-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 40%; background: linear-gradient(to top, rgba(255,255,255,0.95), transparent); z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; box-sizing: border-box; }
+        .card-name { color: #333; font-weight: bold; font-size: 14px; text-shadow: none; }
+        .player-card:hover .card-name { color: #d4af37; transform: translateY(-3px); }
+        .default-poster { position: absolute; top:0; left:0; width: 100%; height: 100%; background: #fdfdfd; color: #ccc; display: flex; justify-content: center; align-items: center; z-index: 1; flex-direction: column; border: 1px dashed #e0e0e0; }
+        .debug-msg { font-size: 10px; color: #e57373; margin-top: 5px; }
+
+        /* --- VIEW: GUESTBOOK --- */
+        #view-guestbook { z-index: 10; overflow: hidden; }
+        .danmaku-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .danmaku-item { position: absolute; white-space: nowrap; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(212, 175, 55, 0.8), 0 0 20px rgba(0,0,0,0.5); opacity: 0.9; transform: translateX(100vw); }
+        .dm-id { color: #d4af37; font-size: 0.8em; margin-left: 10px; opacity: 0.8; }
+
+        /* --- VIEW: MASTER (社主寄语 - 新增) --- */
+        #view-master { z-index: 10; overflow: hidden; }
+        #master-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('bg.jpg'); /* 社主寄语专属背景 */
+            background-size: cover; background-position: center;
+            filter: brightness(0.8); /* 稍微压暗一点衬托文字 */
+            z-index: -1;
+        }
+        #masterCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .master-message-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center; z-index: 2;
+        }
+        .master-text {
+            font-size: 120px; font-weight: bold; color: #fff;
+            text-shadow: 0 0 30px #d4af37, 0 0 60px #d4af37, 0 0 100px #d4af37; /* 强烈金色发光 */
+            animation: pulseText 3s infinite alternate ease-in-out;
+            letter-spacing: 10px;
+        }
+        @keyframes pulseText { 0% { transform: scale(1); opacity: 0.9; filter: brightness(1); } 100% { transform: scale(1.05); opacity: 1; filter: brightness(1.2); } }
+
+
+        /* 公共组件 */
+        #back-home-btn { position: fixed; top: 30px; left: 40px; z-index: 10000; background: rgba(255,255,255,0.8); color: #333; padding: 10px 25px; border-radius: 30px; cursor: pointer; border: 2px solid #d4af37; backdrop-filter: blur(10px); font-weight: bold; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; }
+        #back-home-btn:hover { background: #d4af37; color: #fff; box-shadow: 0 0 20px gold; }
+        #bgm-control { position: fixed; bottom: 60px; right: 40px; z-index: 20000; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; background: rgba(255,255,255,0.2); color: #333; transition: 0.3s; }
+        #bgm-control:hover { border-color: gold; color: gold; background: #fff; }
+        .music-wave { display: flex; gap: 3px; align-items: flex-end; height: 15px; }
+        .wave-bar { width: 3px; background: currentColor; animation: waveAnim 1s infinite ease-in-out; }
+        .paused .wave-bar { animation: none; height: 2px !important; }
+        .wave-bar:nth-child(1) { animation-delay: 0.1s; height: 60%; }
+        .wave-bar:nth-child(2) { animation-delay: 0.3s; height: 100%; }
+        .wave-bar:nth-child(3) { animation-delay: 0.5s; height: 40%; }
+        @keyframes waveAnim { 0%, 100% { height: 20%; } 50% { height: 100%; } }
+        #news-ticker-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 40px; background: rgba(255,255,255,0.8); backdrop-filter: blur(5px); border-top: 1px solid #eee; z-index: 100; display: flex; align-items: center; color: #333; font-size: 14px; white-space: nowrap; overflow: hidden; transition: bottom 0.5s; }
+        .ticker-label { background: #d4af37; color: #fff; padding: 0 15px; height: 100%; display: flex; align-items: center; font-weight: bold; z-index: 2; }
+        .ticker-content { display: inline-block; padding-left: 100%; animation: scrollTicker 20s linear infinite; }
+        @keyframes scrollTicker { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* 详情弹窗 */
+        #detail-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20000; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(15px); opacity: 0; pointer-events: none; transition: opacity 0.3s; display: flex; justify-content: center; align-items: center; }
+        #detail-modal.show { opacity: 1; pointer-events: auto; }
+        .modal-card { width: 900px; height: 500px; background: #fff; display: flex; border-radius: 8px; overflow: hidden; box-shadow: 0 40px 100px rgba(212, 175, 55, 0.3); border: 1px solid #eee; transform: scale(0.9); transition: transform 0.3s; }
+        #detail-modal.show .modal-card { transform: scale(1); }
+        .modal-left { width: 65%; height: 100%; background: #f0f0f0; display: flex; justify-content: center; align-items: center; position: relative; border-right: 1px solid #eee; }
+        .modal-left img { width: 100%; height: 100%; object-fit: contain; z-index: 2; }
+        .default-screenshot { position: absolute; width: 100%; height: 100%; background: #fafafa; color: #ccc; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1; }
+        .modal-right { width: 35%; height: 100%; padding: 40px; box-sizing: border-box; color: #555; display: flex; flex-direction: column; justify-content: center; }
+        .modal-right h2 { color: #d4af37; font-size: 32px; margin-bottom: 20px; font-weight: bold; }
+        .modal-right h4 { color: #aaa; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; letter-spacing: 2px; }
+        .close-hint { margin-top: auto; font-size: 12px; color: #aaa; text-align: right; cursor: pointer; }
+        .progress-container { width: 100%; height: 10px; background: #eee; border-radius: 5px; margin-top: 15px; overflow: hidden; display: none; }
+        .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #d4af37, #f7d774); transition: width 1.5s ease-out; }
+        #m-desc div { margin-bottom: 12px; line-height: 1.6; font-size: 15px; color: #444; }
+        #m-desc strong { color: #d4af37; margin-right: 5px; font-size: 16px; }
+
+    </style>
+</head>
+<body>
+
+    <audio id="bgm" src="bgm.mp3" loop></audio>
+
+    <div id="fixed-background"></div>
+    <div id="particles"></div>
+
+    <div id="intro-layer" onclick="enterSite()">
+        <canvas id="fireworksCanvas"></canvas>
+        <div class="typewriter-container"><span id="typewriter" class="typewriter-text"></span></div>
+        <div id="clickHint" class="click-hint">CLICK ANYWHERE TO ENTER</div>
+    </div>
+
+    <div id="view-home" class="view-section">
+        <div id="logo-area"><img id="home-logo" src="members/logo.png" alt="Guild Logo" onclick="showGuildInfo()"></div>
+        <div id="menu-area">
+            <div class="menu-item" onclick="switchView('members')"><div>成员名录</div><div class="menu-sub">MEMBER DIRECTORY</div></div>
+            <div class="menu-item" onclick="switchView('guestbook')"><div>留言板</div><div class="menu-sub">MESSAGE BOARD</div></div>
+            <div class="menu-item" onclick="switchView('master')"><div>社主寄语</div><div class="menu-sub">MASTER'S WORDS</div></div>
+        </div>
+        <div id="news-ticker-bar">
+            <div class="ticker-label">LATEST NEWS</div>
+            <div class="ticker-content">★ 恭喜公会达成10级成就！ ★ 本周五晚8点公会战集合，全员务必上线！ ★ 欢迎新成员加入风起洛阳道！ ★ 官网3.0版本正式上线！</div>
+        </div>
+    </div>
+
+    <div id="view-members" class="view-section">
+        <div id="scroll-container">
+            <div id="game-stage">
+                <div id="member-logo-wrapper"><img id="member-logo-img" src="members/logo.png" onerror="this.style.display='none'"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-guestbook" class="view-section">
+        <div id="danmaku-wall" class="danmaku-container"></div>
+    </div>
+
+    <div id="view-master" class="view-section">
+        <div id="master-bg"></div> <canvas id="masterCanvas"></canvas> <div class="master-message-container">
+            <div class="master-text">天天开心！</div>
+        </div>
+    </div>
+
+    <div id="back-home-btn" onclick="switchView('home')">↩ 返回大厅</div>
+
+    <div id="detail-modal" onclick="closeInfo()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-left">
+                <img id="m-img" src="">
+                <div class="default-screenshot"><span>NO IMAGE</span><div id="m-debug" class="debug-msg"></div></div>
+            </div>
+            <div class="modal-right">
+                <h2 id="m-name">Name</h2>
+                <h4 id="m-id">ID</h4>
+                <div id="m-desc">Description...</div>
+                <div id="progress-wrap" class="progress-container"><div id="member-progress" class="progress-bar"></div></div>
+                <div class="close-hint" onclick="closeInfo()">[ 关闭 ]</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bgm-control" class="paused" onclick="toggleBGM()">
+        <div class="music-wave"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
+    </div>
+
+<script>
+    
+    // --- 1. 成员数据 ---
+    const players = [];
+    const descText = "核心成员 | 擅长突击 | 活跃时间: 每晚8点";
+
+    for (let i = 1; i <= 80; i++) {
+        players.push({
+            id: "UID: 800" + i,
+            name: "伙伴 " + i,
+            job: "Lv.99",
+            desc: descText,
+            poster: "members/poster_" + i + ".jpg", 
+            screenshot: "members/screen_" + i + ".jpg"
+        });
+    }
+
+    // --- 2. 留言板数据 ---
+    const guestMessages = [
+        "祝风起洛阳道新年快乐！ —— 8001",
+        "社主永远的神！ —— 8002",
+        "今年一定要全通副本！ —— 8003",
+        "希望能认识更多新朋友。 —— 8004",
+        "风起洛阳，聚散流沙。 —— 8005",
+        "为了公会的荣耀！ —— 8006",
+        "萌新报道，请多关照。 —— 8007",
+        "什么时候组织线下聚会呀？ —— 8008",
+        "祝大家欧气满满，十连双黄！ —— 8009",
+        "洛阳道第一帅参上！ —— 8010",
+        "在新的一年里一起变强！ —— 8011",
+        "只要大家在一起，就是最好的公会。 —— 8012"
+    ];
+
+
+    // --- 全局变量 ---
+    const stage = document.getElementById('game-stage');
+    const scrollContainer = document.getElementById('scroll-container');
+    const introLayer = document.getElementById('intro-layer');
+    const fwCanvas = document.getElementById('fireworksCanvas');
+    const fwCtx = fwCanvas.getContext('2d');
+
+    let fwWidth, fwHeight;
+    let particles = [];
+    let isFireworksActive = true;
+    let currentX = 0, targetX = 0, isDragging = false, startX = 0, maxScroll = 0;
+
+    window.onload = function() {
+        resizeFW(); createParticles(); arrangePlayers(); startTypewriter(); loopFireworks(); requestAnimationFrame(inertiaLoop);
+    };
+
+    // --- 页面切换逻辑 ---
+    const backBtn = document.getElementById('back-home-btn');
+    const newsBar = document.getElementById('news-ticker-bar');
+    const bgImage = document.getElementById('fixed-background');
+    const danmakuWall = document.getElementById('danmaku-wall');
+    let danmakuInterval = null;
+
+    function enterSite() {
+        document.getElementById('intro-layer').classList.add('fade-out');
+        switchView('home'); playBGM(); setTimeout(() => { isFireworksActive = false; }, 3000);
+    }
+
+    function switchView(viewName) {
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-' + viewName).classList.add('active');
+
+        // 停止所有可能的特效
+        stopDanmaku();
+        stopMasterFireworks();
+
+        // 默认显示全局背景
+        bgImage.style.opacity = '1';
+        bgImage.className = ''; 
+
+        if (viewName === 'home') {
+            backBtn.style.display = 'none';
+            newsBar.style.bottom = '0'; 
+            bgImage.style.transform = 'scale(1)'; 
+        } else if (viewName === 'members') {
+            backBtn.style.display = 'block';
+            newsBar.style.bottom = '-50px';
+            bgImage.style.transform = 'scale(1.1)'; 
+            setTimeout(() => { maxScroll = stage.offsetWidth - window.innerWidth; if(maxScroll < 0) maxScroll = 0; }, 100);
+            triggerWaveAnimation();
+        } else if (viewName === 'guestbook') {
+            backBtn.style.display = 'block';
+            newsBar.style.bottom = '-50px';
+            bgImage.style.transform = 'scale(1.15)';
+            bgImage.className = 'dark-mode'; 
+            startDanmaku();
+        } else if (viewName === 'master') {
+            // 社主寄语页面：隐藏全局背景，使用专属背景
+            backBtn.style.display = 'block';
+            newsBar.style.bottom = '-50px';
+            bgImage.style.opacity = '0'; // 隐藏全局背景
+            startMasterFireworks(); // 开启专属烟花
+        }
+    }
+
+    // --- 弹幕逻辑 ---
+    function startDanmaku() {
+        danmakuWall.innerHTML = ''; 
+        guestMessages.forEach(msg => createDanmakuItem(msg));
+        danmakuInterval = setInterval(() => {
+            const randomMsg = guestMessages[Math.floor(Math.random() * guestMessages.length)];
+            createDanmakuItem(randomMsg);
+        }, 2000);
+    }
+    function stopDanmaku() { if (danmakuInterval) clearInterval(danmakuInterval); danmakuWall.innerHTML = ''; }
+    function createDanmakuItem(text) {
+        const item = document.createElement('div');
+        item.className = 'danmaku-item';
+        const parts = text.split('——');
+        if(parts.length > 1) { item.innerHTML = `${parts[0]}<span class="dm-id">—— ${parts[1]}</span>`; } 
+        else { item.innerText = text; }
+        const top = Math.floor(Math.random() * 80) + 10; 
+        const duration = Math.floor(Math.random() * 10) + 15; 
+        const delay = Math.random() * 5; 
+        item.style.top = top + '%';
+        item.style.animation = `danmakuScroll ${duration}s linear infinite`;
+        item.style.animationDelay = `-${delay}s`;
+        danmakuWall.appendChild(item);
+    }
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `@keyframes danmakuScroll { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }`;
+    document.head.appendChild(styleSheet);
+
+    // --- 社主寄语专属烟花 ---
+    const masterCanvas = document.getElementById('masterCanvas');
+    const masterCtx = masterCanvas.getContext('2d');
+    let masterParticles = [];
+    let isMasterFireworksActive = false;
+
+    function resizeMasterFW() { masterCanvas.width = window.innerWidth; masterCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeMasterFW);
+
+    function startMasterFireworks() {
+        resizeMasterFW();
+        isMasterFireworksActive = true;
+        loopMasterFireworks();
+    }
+    function stopMasterFireworks() { isMasterFireworksActive = false; masterParticles = []; masterCtx.clearRect(0,0,masterCanvas.width, masterCanvas.height); }
+
+    function createMasterFirework(x, y) {
+        const colors = ['#ffcc00', '#ffffff', '#ff4500', '#ffd700']; // 金/白/橙色系
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        for (let i = 0; i < 80; i++) {
+            // 复用 FireworkParticle 类，但需要传入 context
+            masterParticles.push(new MasterFireworkParticle(x, y, color));
+        }
+    }
+
+    class MasterFireworkParticle {
+        constructor(x, y, color) {
+            this.x = x; this.y = y; this.color = color;
+            const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 6 + 3; // 更快更炸
+            this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+            this.alpha = 1; this.life = Math.random() * 0.015 + 0.005;
+        }
+        draw() { masterCtx.globalAlpha = this.alpha; masterCtx.fillStyle = this.color; masterCtx.beginPath(); masterCtx.arc(this.x, this.y, 3, 0, Math.PI*2); masterCtx.fill(); }
+        update() { this.x += this.vx; this.y += this.vy; this.vy += 0.08; this.alpha -= this.life; }
+    }
+
+    function loopMasterFireworks() {
+        if(!isMasterFireworksActive) return;
+        requestAnimationFrame(loopMasterFireworks);
+        masterCtx.globalCompositeOperation = 'destination-out';
+        masterCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // 拖尾效果
+        masterCtx.fillRect(0, 0, masterCanvas.width, masterCanvas.height);
+        masterCtx.globalCompositeOperation = 'lighter';
+
+        if (Math.random() < 0.08) createMasterFirework(Math.random()*masterCanvas.width, Math.random()*masterCanvas.height*0.7);
+
+        masterParticles.forEach((p, i) => {
+            if (p.alpha <= 0) masterParticles.splice(i, 1);
+            else { p.update(); p.draw(); }
+        });
+    }
+
+
+    // --- 弹窗逻辑 ---
+    const modal = document.getElementById('detail-modal');
+    const mImg = document.getElementById('m-img');
+    const mName = document.getElementById('m-name');
+    const mId = document.getElementById('m-id');
+    const mDesc = document.getElementById('m-desc');
+    const mDebug = document.getElementById('m-debug');
+    const mProgress = document.getElementById('progress-wrap');
+    const mProgressBar = document.getElementById('member-progress');
+
+    function showGuildInfo() {
+        mImg.style.display = 'block';
+        mImg.src = "members/master.png"; 
+        mImg.onerror = function() { this.src = "members/logo.png"; }; 
+        mName.innerText = "风起洛阳道";
+        mId.innerText = "GUILD PROFILE";
+        mDesc.innerHTML = `<div><strong>社主：</strong>黑糖海带结</div><div><strong>百业创立时间：</strong>2023年10月1日</div><div><strong>百业简介：</strong>聚散流沙，风起洛阳。我们是一个专注于快乐游戏的养老公会。</div><div style="margin-top:20px; color:#999; font-size:12px;">当前人数：80 / 100</div>`;
+        mProgress.style.display = 'block'; 
+        modal.classList.add('show');
+        setTimeout(() => { mProgressBar.style.width = '80%'; }, 100);
+    }
+
+    function openModal(data) {
+        mImg.style.display = 'none';
+        if (data.screenshot) {
+            mImg.src = data.screenshot; mImg.style.display = 'block';
+            mImg.onerror = function() { this.style.display = 'none'; mDebug.innerText = "Missing: " + data.screenshot; };
+        } else { mDebug.innerText = "No screenshot"; }
+        mName.innerText = data.name; mId.innerText = data.id; mDesc.innerText = data.desc;
+        mProgress.style.display = 'none'; 
+        modal.classList.add('show');
+    }
+    function closeInfo() { modal.classList.remove('show'); mProgressBar.style.width = '0%'; }
+
+    // --- 打字机 & 开场烟花 ---
+    const textToType = "祝 风起洛阳道的各位 新年快乐！！！";
+    const typeWriterElement = document.getElementById('typewriter');
+    let typeIndex = 0;
+    function startTypewriter() {
+        if (typeIndex < textToType.length) {
+            typeWriterElement.innerHTML += textToType.charAt(typeIndex);
+            typeIndex++; setTimeout(startTypewriter, 100);
+        } else { document.getElementById('clickHint').classList.add('show'); }
+    }
+    function resizeFW() { fwWidth = window.innerWidth; fwHeight = window.innerHeight; fwCanvas.width = fwWidth; fwCanvas.height = fwHeight; }
+    window.addEventListener('resize', resizeFW);
+    class FireworkParticle {
+        constructor(x, y, color) { this.x = x; this.y = y; this.color = color; const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 5 + 2; this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed; this.alpha = 1; this.life = Math.random() * 0.02 + 0.01; }
+        draw() { fwCtx.globalAlpha = this.alpha; fwCtx.fillStyle = this.color; fwCtx.beginPath(); fwCtx.arc(this.x, this.y, 2, 0, Math.PI*2); fwCtx.fill(); }
+        update() { this.x += this.vx; this.y += this.vy; this.vy += 0.05; this.alpha -= this.life; }
+    }
+    function createFirework(x, y) { const colors = ['#d4af37', '#fff', '#ffd700']; const color = colors[Math.floor(Math.random() * colors.length)]; for (let i = 0; i < 60; i++) particles.push(new FireworkParticle(x, y, color)); }
+    function loopFireworks() {
+        if(!isFireworksActive) return; requestAnimationFrame(loopFireworks); fwCtx.clearRect(0, 0, fwWidth, fwHeight);
+        if (Math.random() < 0.05) createFirework(Math.random()*fwWidth, Math.random()*fwHeight*0.6);
+        particles.forEach((p, i) => { if (p.alpha <= 0) particles.splice(i, 1); else { p.update(); p.draw(); } });
+    }
+
+    // --- BGM ---
+    const bgm = document.getElementById('bgm'); const bgmCtrl = document.getElementById('bgm-control');
+    function playBGM() { bgm.play().then(() => bgmCtrl.classList.remove('paused')).catch(() => {}); }
+    function toggleBGM() { if (bgm.paused) { bgm.play(); bgmCtrl.classList.remove('paused'); } else { bgm.pause(); bgmCtrl.classList.add('paused'); } }
+
+    // --- 成员列表 ---
+    function arrangePlayers() {
+        const CARD_W = 220; const CARD_H = 330; const GAP_X = 20; const GAP_Y = 10; 
+        const ROW_H = CARD_H + GAP_Y; const COL_W = CARD_W + GAP_X; 
+        const MASTER_OFFSET = 80 + 520 + 200; 
+        const START_Y = window.innerHeight / 2 - ROW_H + (GAP_Y/2);
+        players.forEach((p, index) => {
+            let row = index % 2; let col = Math.floor(index / 2);
+            let x = MASTER_OFFSET + col * COL_W; let y = START_Y + row * ROW_H;
+            if (row === 1) x += COL_W / 2;
+            createPlayer(p, x, y);
+        });
+        stage.style.width = (MASTER_OFFSET + Math.ceil(players.length/2) * COL_W + 400) + 'px';
+    }
+    function createPlayer(data, x, y) {
+        let wrapper = document.createElement('div'); wrapper.className = 'player-pos'; wrapper.style.left = x + 'px'; wrapper.style.top = y + 'px';
+        let card = document.createElement('div'); card.className = 'player-card';
+        card.onmousemove = function(e) { tiltCard(e, card) }; card.onmouseleave = function(e) { resetCard(card) };
+        card.onclick = function(e) { e.stopPropagation(); openModal(data); };
+        let html = `<div class="default-poster" id="def-${data.id}"><span>ID CARD</span><div class="debug-msg">Missing: ${data.poster}</div></div>`;
+        if (data.poster) { html += `<img data-src="${data.poster}" onerror="this.style.display='none'; document.getElementById('def-${data.id}').style.zIndex='3'">`; }
+        html += `<div class="card-overlay"><div class="card-name">${data.name}</div></div>`;
+        card.innerHTML = html; wrapper.appendChild(card); stage.appendChild(wrapper); lazyObserver.observe(card.querySelector('img') || card);
+    }
+    const lazyObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => { if (entry.isIntersecting) { let img = entry.target; if (img.tagName === 'IMG' && img.dataset.src) { img.src = img.dataset.src; if(img.complete) img.classList.add('loaded'); else img.onload = () => img.classList.add('loaded'); img.removeAttribute('data-src'); } lazyObserver.unobserve(img); } });
+    }, { rootMargin: "0px 600px 0px 0px" });
+    function triggerWaveAnimation() { document.querySelectorAll('.player-pos').forEach((wrap, index) => { let col = Math.floor(index / 2); wrap.style.animation = 'none'; wrap.offsetHeight; wrap.style.animation = `waveAppear 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards ${col * 0.08}s`; }); }
+
+    // --- 滚动 & 3D ---
+    scrollContainer.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX - currentX; scrollContainer.style.cursor = 'grabbing'; });
+    window.addEventListener('mouseup', () => { isDragging = false; scrollContainer.style.cursor = 'grab'; });
+    window.addEventListener('mousemove', (e) => { if (!isDragging) return; e.preventDefault(); targetX = e.pageX - startX; });
+    window.addEventListener('wheel', (e) => { targetX -= e.deltaY; });
+    function inertiaLoop() { currentX += (targetX - currentX) * 0.08; if (targetX > 0) targetX = 0; if (targetX < -maxScroll) targetX = -maxScroll; stage.style.transform = `translateX(${currentX}px)`; requestAnimationFrame(inertiaLoop); }
+    function tiltCard(e, card) { const rect = card.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; const centerX = rect.width / 2; const centerY = rect.height / 2; const rotateX = ((y - centerY) / centerY) * -10; const rotateY = ((x - centerX) / centerX) * 10; card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`; }
+    function resetCard(card) { card.style.transform = `perspective(1000px) rotateX(0) rotateY(0) scale(1)`; }
+    function createParticles() { const container = document.getElementById('particles'); for(let i=0; i<150; i++) { let p = document.createElement('div'); p.className = 'particle'; let size = Math.random() * 5 + 2; p.style.width = size + 'px'; p.style.height = size + 'px'; p.style.left = Math.random() * 100 + 'vw'; p.style.top = Math.random() * 100 + 'vh'; p.style.animationDelay = Math.random() * 5 + 's'; p.style.animationDuration = (Math.random() * 20 + 10) + 's'; container.appendChild(p); } }
+</script>
+</body>
+</html>
